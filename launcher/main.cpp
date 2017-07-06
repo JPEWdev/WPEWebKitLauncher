@@ -1,7 +1,10 @@
 #include <WPE/WebKit.h>
 #include <WPE/WebKit/WKCookieManagerSoup.h>
 
+#include <cstdarg>
 #include <cstdio>
+#include <iostream>
+#include <vector>
 #include <glib.h>
 #include <initializer_list>
 
@@ -72,6 +75,28 @@ WKViewClientV0 s_viewClient = {
     },
 };
 
+WKStringRef createPath(int mode, ...)
+{
+    va_list args;
+    std::vector<gchar*> path;
+    gchar* c;
+
+    va_start(args, mode);
+    do {
+        c = va_arg(args, gchar*);
+        path.push_back(c);
+    } while (c);
+    va_end(args);
+
+    gchar* p = g_build_filenamev(path.data());
+
+    g_mkdir_with_parents(p, mode);
+    auto s = WKStringCreateWithUTF8CString(p);
+    g_free(p);
+
+    return s;
+}
+
 int main(int argc, char* argv[])
 {
     GMainLoop* loop = g_main_loop_new(nullptr, FALSE);
@@ -80,17 +105,14 @@ int main(int argc, char* argv[])
     auto injectedBundlePath = WKStringCreateWithUTF8CString("/usr/lib/libWPEInjectedBundle.so");
     WKContextConfigurationSetInjectedBundlePath(contextConfiguration, injectedBundlePath);
 
-    gchar *wpeStoragePath = g_build_filename(g_get_user_cache_dir(), "wpe", "local-storage", nullptr);
-    g_mkdir_with_parents(wpeStoragePath, 0700);
-    auto storageDirectory = WKStringCreateWithUTF8CString(wpeStoragePath);
-    g_free(wpeStoragePath);
-    WKContextConfigurationSetLocalStorageDirectory(contextConfiguration, storageDirectory);
+    WKContextConfigurationSetLocalStorageDirectory(contextConfiguration,
+            createPath(0700, g_get_user_cache_dir(), "wpe", "local-storage", nullptr));
 
-    gchar *wpeDiskCachePath = g_build_filename(g_get_user_cache_dir(), "wpe", "disk-cache", nullptr);
-    g_mkdir_with_parents(wpeDiskCachePath, 0700);
-    auto diskCacheDirectory = WKStringCreateWithUTF8CString(wpeDiskCachePath);
-    g_free(wpeDiskCachePath);
-    WKContextConfigurationSetDiskCacheDirectory(contextConfiguration, diskCacheDirectory);
+    WKContextConfigurationSetDiskCacheDirectory(contextConfiguration,
+            createPath(0700, g_get_user_cache_dir(), "wpe", "disk-cache", nullptr));
+
+    WKContextConfigurationSetIndexedDBDatabaseDirectory(contextConfiguration,
+            createPath(0700, g_get_user_cache_dir(), "wpe", "index-db", nullptr));
 
     WKRelease(injectedBundlePath);
 
