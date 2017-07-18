@@ -6,6 +6,7 @@
 #include <iostream>
 #include <vector>
 #include <glib.h>
+#include <locale.h>
 #include <initializer_list>
 
 WKPageNavigationClientV0 s_navigationClient = {
@@ -99,6 +100,7 @@ WKStringRef createPath(int mode, ...)
 
 int main(int argc, char* argv[])
 {
+    setlocale(LC_ALL, "");
     GMainLoop* loop = g_main_loop_new(nullptr, FALSE);
 
     auto contextConfiguration = WKContextConfigurationCreate();
