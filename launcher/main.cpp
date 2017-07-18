@@ -9,7 +9,9 @@
 #include <locale.h>
 #include <initializer_list>
 
-WKPageNavigationClientV0 s_navigationClient = {
+static GMainLoop* loop;
+
+static const WKPageNavigationClientV0 s_navigationClient = {
     { 0, nullptr },
     // decidePolicyForNavigationAction
     [](WKPageRef, WKNavigationActionRef, WKFramePolicyListenerRef listener, WKTypeRef, const void*) {
@@ -47,7 +49,12 @@ WKPageNavigationClientV0 s_navigationClient = {
     nullptr, // renderingProgressDidChange
     nullptr, // canAuthenticateAgainstProtectionSpace
     nullptr, // didReceiveAuthenticationChallenge
-    nullptr, // webProcessDidCrash
+    // webProcessDidCrash
+    [](WKPageRef, const void*)
+    {
+        fprintf(stderr, "Web process crashed\n");
+        g_main_loop_quit(loop);
+    },
     nullptr, // copyWebCryptoMasterKey
     nullptr, // didBeginNavigationGesture
     nullptr, // willEndNavigationGesture
@@ -55,7 +62,26 @@ WKPageNavigationClientV0 s_navigationClient = {
     nullptr, // didRemoveNavigationGestureSnapshot
 };
 
-WKViewClientV0 s_viewClient = {
+static const WKContextClientV2 s_contextClient = {
+    { 2, nullptr },
+    nullptr, // plugInAutoStartOriginHashesChanged
+    // networkProcessDidCrash
+    [](WKContextRef, const void*)
+    {
+        fprintf(stderr, "Network process crashed\n");
+        g_main_loop_quit(loop);
+    },
+    nullptr, // plugInInformationBecameAvailable
+    nullptr, // (*copyWebCryptoMasterKey_unavailable)(void)
+    // databaseProcessDidCrash
+    [](WKContextRef, const void*)
+    {
+        fprintf(stderr, "Database process crashed\n");
+        g_main_loop_quit(loop);
+    },
+};
+
+static const WKViewClientV0 s_viewClient = {
     { 0, nullptr },
     // frameDisplayed
     [](WKViewRef, const void*) {
@@ -101,7 +127,8 @@ WKStringRef createPath(int mode, ...)
 int main(int argc, char* argv[])
 {
     setlocale(LC_ALL, "");
-    GMainLoop* loop = g_main_loop_new(nullptr, FALSE);
+
+    loop = g_main_loop_new(nullptr, FALSE);
 
     auto contextConfiguration = WKContextConfigurationCreate();
     auto injectedBundlePath = WKStringCreateWithUTF8CString(PREFIX "/lib/libWPEInjectedBundle.so");
@@ -119,6 +146,7 @@ int main(int argc, char* argv[])
     WKRelease(injectedBundlePath);
 
     WKContextRef context = WKContextCreateWithConfiguration(contextConfiguration);
+    WKContextSetClient(context, &s_contextClient.base);
     WKRelease(contextConfiguration);
 
     auto pageGroupIdentifier = WKStringCreateWithUTF8CString("WPEPageGroup");
