@@ -18,8 +18,13 @@ static const WKPageNavigationClientV0 s_navigationClient = {
         WKFramePolicyListenerUse(listener);
     },
     // decidePolicyForNavigationResponse
-    [](WKPageRef, WKNavigationResponseRef, WKFramePolicyListenerRef listener, WKTypeRef, const void*) {
-        WKFramePolicyListenerUse(listener);
+    [](WKPageRef, WKNavigationResponseRef response, WKFramePolicyListenerRef listener, WKTypeRef, const void*) {
+        bool canShowMIMEType = WKNavigationResponseCanShowMIMEType(response);
+
+        if (canShowMIMEType)
+            WKFramePolicyListenerUse(listener);
+        else
+            WKFramePolicyListenerIgnore(listener);
     },
     nullptr, // decidePolicyForPluginLoad
     nullptr, // didStartProvisionalNavigation
