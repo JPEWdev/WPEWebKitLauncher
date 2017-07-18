@@ -4,6 +4,7 @@ project(WPELauncher)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+add_definitions(-DPREFIX="${CMAKE_INSTALL_PREFIX}")
 
 find_package(WPEWebKit REQUIRED)
 

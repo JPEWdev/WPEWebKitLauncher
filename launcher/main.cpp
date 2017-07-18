@@ -102,7 +102,7 @@ int main(int argc, char* argv[])
     GMainLoop* loop = g_main_loop_new(nullptr, FALSE);
 
     auto contextConfiguration = WKContextConfigurationCreate();
-    auto injectedBundlePath = WKStringCreateWithUTF8CString("/usr/lib/libWPEInjectedBundle.so");
+    auto injectedBundlePath = WKStringCreateWithUTF8CString(PREFIX "/lib/libWPEInjectedBundle.so");
     WKContextConfigurationSetInjectedBundlePath(contextConfiguration, injectedBundlePath);
 
     WKContextConfigurationSetLocalStorageDirectory(contextConfiguration,
